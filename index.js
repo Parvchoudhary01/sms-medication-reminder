@@ -1,43 +1,44 @@
-require('dotenv').config()
+require('dotenv').config();
+
+const express = require("express");
+const app = express();
+
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
+
 const client = require('twilio')(accountSid, authToken);
 const cron = require('node-cron');
 const moment = require('moment');
 
 console.log(`Medication Reminder started at ${moment().format('DD/MM/YYYY HH:mm')}`);
 
-// Trigger every day at 20h05 pm
-cron.schedule('05 20 * * *', async () => {
-  // Inital data of dates (start and end date)
-  let startDate = '08/03/2022'
+// Simple route so browser can open it
+app.get("/", (req, res) => {
+  res.send("SMS Medication Reminder is running 🚀");
+});
 
-  // Reminds you during 20 days
-  let endDate = moment(startDate, 'DD/MM/YYYY').add(20, 'days');
+// Cron job
+cron.schedule('* * * * *', async () => {
 
-  console.log(startDate, endDate);
+  let startDate = '08/03/2022';
 
-  // Set new dates for the new cycle
-  if (moment().isAfter(endDate)) {
-    for (let i = 0; i < 100000; i += 1) {
-      if (moment().isAfter(endDate)) {
-        // if 20 days have passed, set a pause for 7 days
-        startDate = moment(startDate, 'DD/MM/YYYY').add(27, 'days').format('DD/MM/YYYY')
-        endDate = moment(startDate, 'DD/MM/YYYY').add(20, 'days')
-      } else {
-        break;
-      }
-    }
-  }
-
-  // Send the reminder
   if (moment(startDate, 'DD/MM/YYYY').isBefore()) {
+
     client.messages
       .create({
         body: 'Take your medication',
-        from: 'MEDREM',
+        from: process.env.TWILIO_PHONE_NUMBER,
         to: process.env.PHONE_NUMBER,
       })
-      .then(message => console.log(message.sid));
+      .then(message => console.log("Message Sent:", message.sid))
+      .catch(err => console.log("Error:", err.message));
   }
+
+});
+
+// IMPORTANT FOR RENDER
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
